@@ -1,3 +1,4 @@
+import math
 from os.path import exists
 
 import pandas as pd
@@ -7,10 +8,38 @@ WORD_LIST_TEXT = "words.txt"
 WORD_LIST = []
 
 
+def safe_log2(x):
+    return math.log2(x) if x > 0 else 0
+
+
+def get_weighted_bits(list_of_probabilities):
+    """Given a list of probabilities, calculate the weighted exepected bits of information gained
+    :param list_of_probabilities: a list of floats representing probabilities. Should add to 1
+    :return: a float representing expected bits of information gained"""
+
+    # keep running tally of bits gained so far
+    ret_val = 0
+
+    for prob in list_of_probabilities:
+        ret_val += prob * bits_of_information(prob)
+
+    return ret_val
+
+
+def bits_of_information(probability):
+    """Given a probability, calculate the bits of information gained"""
+    return safe_log2(1 / probability)
+
+
 def ret_wordle_num(word1, word2):
+    """Takes in 2 words and returns the wordle frequency where 0 is black, 1 is yellow and 2 is green.
+
+    :param word1: The guess
+    :param word2: The correct answer
+    :return: Wordle frequency score"""
     final_score = ""
     for index in range(len(word1)):
-        #print(word2)
+        # print(word2)
         if word1[index] == word2[index]:
             final_score = final_score + "2"
             word2 = word2[:index] + "*" + word2[index + 1:]
@@ -43,6 +72,7 @@ def gen_statistics(in_file, out_file):
 
 
 def create_csv(in_list, out_file):
+    """Creates a csv crossing a word list with itself"""
     if exists(out_file):
         # File already exists
         return
@@ -53,6 +83,7 @@ def create_csv(in_list, out_file):
 
 
 def read_to_list(in_file):
+    """Reads a file containing a bunch of words and returns the words compiled into a list"""
     global WORD_LIST
     # opening the file in read mode
     my_file = open(in_file, "r")
@@ -68,8 +99,21 @@ def read_to_list(in_file):
     return WORD_LIST
 
 
+def get_possible_sol_dist(tally_list):
+    """Given a list tallying the number of each type of answer in Wordle, return a list converting them to a
+    distribution
+
+    :param tally_list: a list of ints representing how many of each it is"""
+
+    total = sum(tally_list)
+
+    for i in range(len(tally_list)):
+        tally_list[i] = tally_list[i]/total
+
+    return tally_list
+
 if __name__ == '__main__':
-    create_csv(read_to_list(WORD_LIST_TEXT), STATISTICS)
-    gen_statistics(STATISTICS, "wordle_frequencys3.csv")
-    # print(ret_wordle_num("aback", "abbey"))
-    # print("22000")
+    # create_csv(read_to_list(WORD_LIST_TEXT), STATISTICS)
+    # gen_statistics(STATISTICS, "wordle_frequencys3.csv")
+
+    print(get_possible_sol_dist([2, 0, 1, 1]))
