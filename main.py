@@ -1,3 +1,4 @@
+import itertools
 import math
 from os.path import exists
 
@@ -5,11 +6,10 @@ import pandas as pd
 
 STATISTICS = "wordle_frequencys.csv"
 WORD_LIST_TEXT = "words.txt"
+BIT_VAL_CSV = "words_to_bits.csv"
+
 WORD_LIST = []
-
-
-def safe_log2(x):
-    return math.log2(x) if x > 0 else 0
+POSSIBLE_WORDLE_VALUES = [''.join(i) for i in itertools.product(["0", "1", "2"], repeat=5)]
 
 
 def get_weighted_bits(list_of_probabilities):
@@ -28,7 +28,7 @@ def get_weighted_bits(list_of_probabilities):
 
 def bits_of_information(probability):
     """Given a probability, calculate the bits of information gained"""
-    return safe_log2(1 / probability)
+    return math.log2(1 / probability) if probability > 0 else 0
 
 
 def ret_wordle_num(word1, word2):
@@ -108,12 +108,31 @@ def get_possible_sol_dist(tally_list):
     total = sum(tally_list)
 
     for i in range(len(tally_list)):
-        tally_list[i] = tally_list[i]/total
+        tally_list[i] = tally_list[i] / total
 
     return tally_list
+
+
+def gen_tallies(in_file, search_space, out_file):
+    """Given a file of solutions"""
+    df = pd.read_csv(in_file, dtype=str)
+
+    sol_dict = {}
+
+    for index, row in df.iterrows():
+        dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
+
+        for word in search_space:
+            dict[df.iloc[index][word]] = dict[df.iloc[index][word]]+1
+
+        sol_dict[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
+
+    df2 = pd.DataFrame.from_dict(sol_dict, orient="index")
+    df2.to_csv(out_file)
+
 
 if __name__ == '__main__':
     # create_csv(read_to_list(WORD_LIST_TEXT), STATISTICS)
     # gen_statistics(STATISTICS, "wordle_frequencys3.csv")
-
-    print(get_possible_sol_dist([2, 0, 1, 1]))
+    read_to_list(WORD_LIST_TEXT)
+    gen_tallies(STATISTICS, WORD_LIST, BIT_VAL_CSV)
