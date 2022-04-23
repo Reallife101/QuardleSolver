@@ -120,19 +120,39 @@ def gen_tallies(in_file, search_space, out_file):
     sol_dict = {}
 
     for index, row in df.iterrows():
-        dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
+        if WORD_LIST[index] in search_space:
+            dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
 
-        for word in search_space:
-            dict[df.iloc[index][word]] = dict[df.iloc[index][word]]+1
+            for word in search_space:
+                dict[df.iloc[index][word]] = dict[df.iloc[index][word]]+1
 
-        sol_dict[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
+            sol_dict[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
 
     df2 = pd.DataFrame.from_dict(sol_dict, orient="index")
     df2.to_csv(out_file)
+
+
+def get_smaller_list(in_file, search_space, guess, match):
+    """Given a file of solutions"""
+    df = pd.read_csv(in_file, dtype=str)
+
+    sol = []
+
+    for word in search_space:
+        if df.iloc[WORD_LIST.index(guess)][word] == match:
+             sol.append(word)
+
+    return sol
 
 
 if __name__ == '__main__':
     # create_csv(read_to_list(WORD_LIST_TEXT), STATISTICS)
     # gen_statistics(STATISTICS, "wordle_frequencys3.csv")
     read_to_list(WORD_LIST_TEXT)
-    gen_tallies(STATISTICS, WORD_LIST, BIT_VAL_CSV)
+    #gen_tallies(STATISTICS, WORD_LIST, BIT_VAL_CSV)
+    smaller_space = get_smaller_list(STATISTICS, WORD_LIST, 'raise', '10010')
+    gen_tallies(STATISTICS, smaller_space, "guess2.csv")
+    smaller_space2 = get_smaller_list(STATISTICS, smaller_space, 'short', '20222')
+    gen_tallies(STATISTICS, smaller_space2, "guess3.csv")
+    # smaller_space3 = get_smaller_list(STATISTICS, smaller_space2, 'crave', '12202')
+    # gen_tallies(STATISTICS, smaller_space3, "guess3.csv")
