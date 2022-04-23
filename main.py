@@ -10,6 +10,7 @@ BIT_VAL_CSV = "words_to_bits.csv"
 
 WORD_LIST = []
 POSSIBLE_WORDLE_VALUES = [''.join(i) for i in itertools.product(["0", "1", "2"], repeat=5)]
+WORD1 = []
 
 
 def get_weighted_bits(list_of_probabilities):
@@ -85,6 +86,7 @@ def create_csv(in_list, out_file):
 def read_to_list(in_file):
     """Reads a file containing a bunch of words and returns the words compiled into a list"""
     global WORD_LIST
+    global WORD1
     # opening the file in read mode
     my_file = open(in_file, "r")
 
@@ -94,6 +96,7 @@ def read_to_list(in_file):
     # replacing end of line('/n') with ' ' and
     # splitting the text it further when '.' is seen.
     WORD_LIST = data.replace('\n', ' ').split(" ")
+    WORD1 = WORD_LIST
 
     my_file.close()
     return WORD_LIST
@@ -124,7 +127,7 @@ def gen_tallies(in_file, search_space, out_file):
             dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
 
             for word in search_space:
-                dict[df.iloc[index][word]] = dict[df.iloc[index][word]]+1
+                dict[df.iloc[index][word]] = dict[df.iloc[index][word]] + 1
 
             sol_dict[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
 
@@ -132,27 +135,73 @@ def gen_tallies(in_file, search_space, out_file):
     df2.to_csv(out_file)
 
 
+def gen_tallies2(in_file, search_space):
+    """Given a file of solutions"""
+    df = pd.read_csv(in_file, dtype=str)
+
+    sol_dict = {}
+
+    for index, row in df.iterrows():
+        if WORD_LIST[index] in search_space:
+            dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
+
+            for word in search_space:
+                dict[df.iloc[index][word]] = dict[df.iloc[index][word]] + 1
+
+            sol_dict[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
+
+    print(f"Possible Solutions Left: {sol_dict.keys()}")
+
+    return max(sol_dict, key=sol_dict.get), max(sol_dict.values()), len(sol_dict)
+
+
 def get_smaller_list(in_file, search_space, guess, match):
     """Given a file of solutions"""
     df = pd.read_csv(in_file, dtype=str)
 
     sol = []
+    # print(f"-----SEARCH SPACE--------:{search_space}")
 
     for word in search_space:
         if df.iloc[WORD_LIST.index(guess)][word] == match:
-             sol.append(word)
+            sol.append(word)
 
     return sol
 
 
+def loop():
+    global WORD1
+    guess = input("Enter your guess (ex: raise): ")
+    result = input("Enter your result (ex: 10201): ")
+
+    # if guess in WORD1:
+    #     WORD1.remove(guess)
+
+    WORD1 = get_smaller_list(STATISTICS, WORD1, guess, result)
+    word, score, l = gen_tallies2(STATISTICS, WORD1)
+
+    print("\n----------NEXT GUESS------------")
+    print(f"{l} possible words left.")
+    print(f"Suggested guess is '{word}' with a score of {score} bits of info on average.")
+
+
 if __name__ == '__main__':
+
     # create_csv(read_to_list(WORD_LIST_TEXT), STATISTICS)
     # gen_statistics(STATISTICS, "wordle_frequencys3.csv")
+
     read_to_list(WORD_LIST_TEXT)
-    #gen_tallies(STATISTICS, WORD_LIST, BIT_VAL_CSV)
-    smaller_space = get_smaller_list(STATISTICS, WORD_LIST, 'raise', '10010')
-    gen_tallies(STATISTICS, smaller_space, "guess2.csv")
-    smaller_space2 = get_smaller_list(STATISTICS, smaller_space, 'short', '20222')
-    gen_tallies(STATISTICS, smaller_space2, "guess3.csv")
+
+    # gen_tallies(STATISTICS, WORD_LIST, BIT_VAL_CSV)
+    # smaller_space = get_smaller_list(STATISTICS, WORD_LIST, 'raise', '10010')
+    # gen_tallies(STATISTICS, smaller_space, "guess2.csv")
+    # smaller_space2 = get_smaller_list(STATISTICS, smaller_space, 'short', '20222')
+    # gen_tallies(STATISTICS, smaller_space2, "guess3.csv")
     # smaller_space3 = get_smaller_list(STATISTICS, smaller_space2, 'crave', '12202')
     # gen_tallies(STATISTICS, smaller_space3, "guess3.csv")
+    print("Note: 0 = Gray, 1 = Yellow, 2 = Green.")
+    print("2309 possible words left.")
+    print("Suggested guess is 'raise' with a score of 5.878 bits of info on average.")
+
+    while True:
+        loop()
