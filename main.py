@@ -1,3 +1,4 @@
+import copy
 import itertools
 import math
 from os.path import exists
@@ -11,6 +12,9 @@ BIT_VAL_CSV = "words_to_bits.csv"
 WORD_LIST = []
 POSSIBLE_WORDLE_VALUES = [''.join(i) for i in itertools.product(["0", "1", "2"], repeat=5)]
 WORD1 = []
+WORD2 = []
+WORD3 = []
+WORD4 = []
 
 
 def get_weighted_bits(list_of_probabilities):
@@ -53,6 +57,7 @@ def ret_wordle_num(word1, word2):
             for j in range(len(word2)):
                 if word1[index] == word2[j]:
                     word2 = word2[:j] + "*" + word2[j + 1:]
+                    break
             final_score = final_score[:index] + "1" + final_score[index + 1:]
 
     return final_score
@@ -86,7 +91,7 @@ def create_csv(in_list, out_file):
 def read_to_list(in_file):
     """Reads a file containing a bunch of words and returns the words compiled into a list"""
     global WORD_LIST
-    global WORD1
+    global WORD1, WORD2, WORD3, WORD4
     # opening the file in read mode
     my_file = open(in_file, "r")
 
@@ -96,7 +101,10 @@ def read_to_list(in_file):
     # replacing end of line('/n') with ' ' and
     # splitting the text it further when '.' is seen.
     WORD_LIST = data.replace('\n', ' ').split(" ")
-    WORD1 = WORD_LIST
+    WORD1 = copy.deepcopy(WORD_LIST)
+    WORD2 = copy.deepcopy(WORD_LIST)
+    WORD3 = copy.deepcopy(WORD_LIST)
+    WORD4 = copy.deepcopy(WORD_LIST)
 
     my_file.close()
     return WORD_LIST
@@ -135,24 +143,77 @@ def gen_tallies(in_file, search_space, out_file):
     df2.to_csv(out_file)
 
 
-def gen_tallies2(in_file, search_space):
+def gen_tallies2(in_file, search_space1, search_space2, search_space3, search_space4):
     """Given a file of solutions"""
     df = pd.read_csv(in_file, dtype=str)
 
-    sol_dict = {}
+    sol_dict1 = {}
+    sol_dict2 = {}
+    sol_dict3 = {}
+    sol_dict4 = {}
 
     for index, row in df.iterrows():
-        if WORD_LIST[index] in search_space:
+        if WORD_LIST[index] in search_space1:
             dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
 
-            for word in search_space:
+            for word in search_space1:
                 dict[df.iloc[index][word]] = dict[df.iloc[index][word]] + 1
 
-            sol_dict[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
+            sol_dict1[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
 
-    print(f"Possible Solutions Left: {sol_dict.keys()}")
+        if WORD_LIST[index] in search_space2:
+            dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
 
-    return max(sol_dict, key=sol_dict.get), max(sol_dict.values()), len(sol_dict)
+            for word in search_space2:
+                dict[df.iloc[index][word]] = dict[df.iloc[index][word]] + 1
+
+            sol_dict2[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
+
+        if WORD_LIST[index] in search_space3:
+            dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
+
+            for word in search_space3:
+                dict[df.iloc[index][word]] = dict[df.iloc[index][word]] + 1
+
+            sol_dict3[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
+
+        if WORD_LIST[index] in search_space4:
+            dict = {key: 0 for key in POSSIBLE_WORDLE_VALUES}
+
+            for word in search_space4:
+                dict[df.iloc[index][word]] = dict[df.iloc[index][word]] + 1
+
+            sol_dict4[WORD_LIST[index]] = get_weighted_bits(get_possible_sol_dist(list(dict.values())))
+
+    print(f"Word 1 Possible Solutions Left: {sol_dict1.keys()}")
+    print(f"Word 2 Possible Solutions Left: {sol_dict2.keys()}")
+    print(f"Word 3 Possible Solutions Left: {sol_dict3.keys()}")
+    print(f"Word 4 Possible Solutions Left: {sol_dict4.keys()}")
+
+    #Combine all dictionaries
+    sol_dictmid1 = {}
+    sol_dictmid2 = {}
+    sol_dictmid3 = {}
+
+    for key in sol_dict1:
+        if key in sol_dict2:
+            sol_dictmid1[key] = sol_dict1[key] + sol_dict2[key]
+
+    sol_dictmid1 = sol_dict1|sol_dict2|sol_dictmid1
+
+    for key in sol_dict3:
+        if key in sol_dict4:
+            sol_dictmid2[key] = sol_dict3[key] + sol_dict4[key]
+
+    sol_dictmid2 = sol_dict3 | sol_dict4 | sol_dictmid2
+
+    for key in sol_dictmid2:
+        if key in sol_dictmid1:
+            sol_dictmid3[key] = sol_dictmid2[key] + sol_dictmid1[key]
+
+    sol_dictmid3 = sol_dictmid2 | sol_dictmid1 | sol_dictmid2
+
+    return max(sol_dictmid3, key=sol_dictmid3.get), max(sol_dictmid3.values()), len(sol_dictmid3)
 
 
 def get_smaller_list(in_file, search_space, guess, match):
@@ -170,15 +231,20 @@ def get_smaller_list(in_file, search_space, guess, match):
 
 
 def loop():
-    global WORD1
-    guess = input("Enter your guess (ex: raise): ")
-    result = input("Enter your result (ex: 10201): ")
+    global WORD1, WORD2, WORD3, WORD4
+    guess = input("Word: Enter your guess (ex: raise): ")
+    result1 = input("Word1: Enter your result (ex: 10201): ")
+    result2 = input("Word2: Enter your result (ex: 10201): ")
+    result3 = input("Word3: Enter your result (ex: 10201): ")
+    result4 = input("Word4: Enter your result (ex: 10201): ")
 
-    # if guess in WORD1:
-    #     WORD1.remove(guess)
+    # Get smaller lists
+    WORD1 = get_smaller_list(STATISTICS, WORD1, guess, result1)
+    WORD2 = get_smaller_list(STATISTICS, WORD2, guess, result2)
+    WORD3 = get_smaller_list(STATISTICS, WORD3, guess, result3)
+    WORD4 = get_smaller_list(STATISTICS, WORD4, guess, result4)
 
-    WORD1 = get_smaller_list(STATISTICS, WORD1, guess, result)
-    word, score, l = gen_tallies2(STATISTICS, WORD1)
+    word, score, l = gen_tallies2(STATISTICS, WORD1, WORD2, WORD3, WORD4)
 
     print("\n----------NEXT GUESS------------")
     print(f"{l} possible words left.")
