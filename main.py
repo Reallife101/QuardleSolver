@@ -16,6 +16,12 @@ WORD2 = []
 WORD3 = []
 WORD4 = []
 
+WORD1_DONE = False
+WORD2_DONE = False
+WORD3_DONE = False
+WORD4_DONE = False
+
+
 
 def get_weighted_bits(list_of_probabilities):
     """Given a list of probabilities, calculate the weighted exepected bits of information gained
@@ -231,18 +237,44 @@ def get_smaller_list(in_file, search_space, guess, match):
 
 
 def loop():
-    global WORD1, WORD2, WORD3, WORD4
+    global WORD1, WORD2, WORD3, WORD4, WORD1_DONE, WORD2_DONE, WORD3_DONE, WORD4_DONE
     guess = input("Word: Enter your guess (ex: raise): ")
-    result1 = input("Word1: Enter your result (ex: 10201): ")
-    result2 = input("Word2: Enter your result (ex: 10201): ")
-    result3 = input("Word3: Enter your result (ex: 10201): ")
-    result4 = input("Word4: Enter your result (ex: 10201): ")
 
     # Get smaller lists
-    WORD1 = get_smaller_list(STATISTICS, WORD1, guess, result1)
-    WORD2 = get_smaller_list(STATISTICS, WORD2, guess, result2)
-    WORD3 = get_smaller_list(STATISTICS, WORD3, guess, result3)
-    WORD4 = get_smaller_list(STATISTICS, WORD4, guess, result4)
+    if not WORD1_DONE:
+        result1 = input("Word1: Enter your result (ex: 10201): ")
+        WORD1 = get_smaller_list(STATISTICS, WORD1, guess, result1)
+
+        if result1 == "22222":
+            WORD1_DONE = True
+
+    if not WORD2_DONE:
+        result2 = input("Word2: Enter your result (ex: 10201): ")
+        WORD2 = get_smaller_list(STATISTICS, WORD2, guess, result2)
+
+        if result2 == "22222":
+            WORD2_DONE = True
+
+    if not WORD3_DONE:
+        result3 = input("Word3: Enter your result (ex: 10201): ")
+        WORD3 = get_smaller_list(STATISTICS, WORD3, guess, result3)
+
+        if result3 == "22222":
+            WORD3_DONE = True
+
+    if not WORD4_DONE:
+        result4 = input("Word4: Enter your result (ex: 10201): ")
+        WORD4 = get_smaller_list(STATISTICS, WORD4, guess, result4)
+
+        if result4 == "22222":
+            WORD4_DONE = True
+
+    for tpl in [(WORD1, WORD1_DONE), (WORD2, WORD2_DONE), (WORD3, WORD3_DONE), (WORD4, WORD4_DONE)]:
+        if not tpl[1] and len(tpl[0]) == 1:
+            print("\n----------NEXT GUESS------------")
+            print(f"Suggested guess is '{tpl[0][0]}' as it is a solution.")
+            return
+
 
     word, score, l = gen_tallies2(STATISTICS, WORD1, WORD2, WORD3, WORD4)
 
